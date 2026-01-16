@@ -23,8 +23,9 @@ createApp({
         const parts = ref({});
         const weeklyData = ref({});
         const selectedWeeklyKey = ref("");
+        // 全局搜尋變數，裝備反向搜尋用
+        const globalSearch = ref("");
 
-        // --- 新增：計算倒敘後的期數 ---
         const sortedWeeklyKeys = computed(() => {
             return Object.keys(weeklyData.value).sort((a, b) => Number(b) - Number(a));
         });
@@ -54,7 +55,9 @@ createApp({
         };
 
         const applyWeekly = () => {
-            if (!selectedWeeklyKey.value) return;
+            if (!selectedWeeklyKey.value) {
+                return
+            };
             const weekInfo = weeklyData.value[selectedWeeklyKey.value];
             Object.keys(labelToKeyMap).forEach(label => {
                 const targetKey = labelToKeyMap[label];
@@ -62,6 +65,36 @@ createApp({
                 parts.value[targetKey].search = keyword || '';
                 parts.value[targetKey].selectedKey = keyword || '';
             });
+        };
+
+        // --- 新增：各部位匹配全局搜尋的方法 ---
+        const globalMatchedResults = (partKey) => {
+            const query = globalSearch.value.trim().toLowerCase();
+            if (!query) return [];
+            
+            const options = parts.value[partKey].options;
+            const matched = [];
+
+            Object.entries(options).forEach(([k, v]) => {
+                // 將描述字串按換行符切成陣列
+                const lines = v.split('\n');
+                
+                // 只保留包含搜尋字串的行
+                const filteredLines = lines.filter(line => 
+                    line.toLowerCase().includes(query)
+                );
+
+                // 詞條名稱 (key) 本身就包含搜尋字串
+                const keyMatches = k.toLowerCase().includes(query);
+
+                if (filteredLines.length > 0 || keyMatches) {
+                    matched.push({ 
+                        key: k, 
+                        value: filteredLines.length > 0 ? filteredLines.join('\n') : v 
+                    });
+                }
+            });
+            return matched;
         };
 
         const filteredOptions = (partKey) => {
@@ -89,6 +122,7 @@ createApp({
         const clearAll = () => {
             if (confirm('確定要清除所有已選配裝嗎？')) {
                 selectedWeeklyKey.value = "";
+                globalSearch.value = ""; // 清除全局搜尋
                 partConfigs.forEach(conf => clearSingle(conf.key));
             }
         };
@@ -97,6 +131,7 @@ createApp({
 
         return {
             parts, partConfigs, weeklyData, selectedWeeklyKey, sortedWeeklyKeys,
+            globalSearch, globalMatchedResults,
             filteredOptions, selectItem, clearSingle, clearAll, applyWeekly
         };
     }
