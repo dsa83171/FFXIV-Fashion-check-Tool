@@ -87,7 +87,7 @@ createApp({
                 // 詞條名稱 (key) 本身就包含搜尋字串
                 const keyMatches = k.toLowerCase().includes(query);
 
-                if (filteredLines.length > 0 || keyMatches) {
+                if (filteredLines.length > 0 ) {
                     matched.push({ 
                         key: k, 
                         value: filteredLines.length > 0 ? filteredLines.join('\n') : v 
