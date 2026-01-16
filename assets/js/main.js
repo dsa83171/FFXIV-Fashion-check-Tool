@@ -23,9 +23,9 @@ createApp({
         const parts = ref({});
         const weeklyData = ref({});
         const selectedWeeklyKey = ref("");
-        // 全局搜尋變數，裝備反向搜尋用
+        // 全域搜尋變數，裝備反向搜尋用
         const globalSearch = ref("");
-
+        // 依期數排序的 keys 陣列
         const sortedWeeklyKeys = computed(() => {
             return Object.keys(weeklyData.value).sort((a, b) => Number(b) - Number(a));
         });
@@ -34,10 +34,14 @@ createApp({
         partConfigs.forEach(conf => {
             parts.value[conf.key] = {
                 label: conf.label,
-                options: {}, search: '', selectedKey: '', isOpen: false
+                options: {}, 
+                search: '', 
+                selectedKey: '', 
+                isOpen: false
             };
         });
 
+        // 讀取各部位詞條資料與 weekly.json
         const fetchData = async () => {
             const partRequests = partConfigs.map(conf => 
                 axios.get(`./assets/datas/${conf.key}.json`)
@@ -54,10 +58,11 @@ createApp({
             });
         };
 
+        // 套用對應期數的詞條
         const applyWeekly = () => {
             if (!selectedWeeklyKey.value) {
-                return
-            };
+                return;
+            }
             const weekInfo = weeklyData.value[selectedWeeklyKey.value];
             Object.keys(labelToKeyMap).forEach(label => {
                 const targetKey = labelToKeyMap[label];
@@ -67,16 +72,18 @@ createApp({
             });
         };
 
-        // --- 新增：各部位匹配全局搜尋的方法 ---
+        // 各部位全域搜尋
         const globalMatchedResults = (partKey) => {
             const query = globalSearch.value.trim().toLowerCase();
-            if (!query) return [];
+            if (!query) {
+                return [];
+            }
             
             const options = parts.value[partKey].options;
             const matched = [];
 
             Object.entries(options).forEach(([k, v]) => {
-                // 將描述字串按換行符切成陣列
+                // 將描述字串按\n切成陣列
                 const lines = v.split('\n');
                 
                 // 只保留包含搜尋字串的行
@@ -97,9 +104,12 @@ createApp({
             return matched;
         };
 
+        // 各部位選單內搜尋
         const filteredOptions = (partKey) => {
             const part = parts.value[partKey];
-            if (!part.search) return part.options;
+            if (!part.search) {
+                return part.options;
+            }
             const searchLower = part.search.toLowerCase();
             const res = {};
             Object.keys(part.options).forEach(k => {
@@ -108,23 +118,24 @@ createApp({
             return res;
         };
 
+        // 選擇某個詞條
         const selectItem = (partKey, itemKey) => {
             parts.value[partKey].selectedKey = itemKey;
             parts.value[partKey].search = itemKey;
             parts.value[partKey].isOpen = false;
         };
 
+        // 清除某個部位的選擇
         const clearSingle = (partKey) => {
             parts.value[partKey].search = '';
             parts.value[partKey].selectedKey = '';
         };
 
+        // 清除所有詞條
         const clearAll = () => {
-            if (confirm('確定要清除所有已選配裝嗎？')) {
-                selectedWeeklyKey.value = "";
-                globalSearch.value = ""; // 清除全局搜尋
-                partConfigs.forEach(conf => clearSingle(conf.key));
-            }
+            selectedWeeklyKey.value = "";
+            globalSearch.value = ""; // 清除全域搜尋
+            partConfigs.forEach(conf => clearSingle(conf.key));
         };
 
         onMounted(() => { fetchData(); });
