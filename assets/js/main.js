@@ -41,21 +41,54 @@ createApp({
             };
         });
 
+        // 自動計算期數
+        const getAutoWeekKey = () => {
+            const baseDate = new Date('2026-01-14T00:00:00'); // 第 416 期起始日
+            const baseWeek = 416;
+            const now = new Date();
+            
+            const diffInMs = now - baseDate;
+            const diffInWeeks = Math.floor(diffInMs / (7 * 24 * 60 * 60 * 1000));
+            
+            return (baseWeek + diffInWeeks).toString();
+        };
+
         // 讀取各部位詞條資料與 weekly.json
         const fetchData = async () => {
-            const partRequests = partConfigs.map(conf => 
-                axios.get(`./assets/datas/${conf.key}.json`)
-                    .then(res => ({ key: conf.key, data: res.data }))
-                    .catch(() => ({ key: conf.key, data: {} }))
-            );
-            const weeklyRequest = axios.get('./assets/datas/weekly.json')
-                .then(res => weeklyData.value = res.data)
-                .catch(() => console.error("無法讀取 weekly.json"));
+            try {
+                const partRequests = partConfigs.map(conf => 
+                    axios.get(`./assets/datas/${conf.key}.json`)
+                        .then(res => ({ key: conf.key, data: res.data }))
+                        .catch(() => ({ key: conf.key, data: {} }))
+                );
 
-            const results = await Promise.all([...partRequests, weeklyRequest]);
-            results.forEach(res => {
-                if (res && res.key) parts.value[res.key].options = res.data;
-            });
+                // 抓取每週主題資料
+                const weeklyRes = await axios.get('./assets/datas/weekly.json');
+                weeklyData.value = weeklyRes.data;
+
+                const results = await Promise.all(partRequests);
+                results.forEach(res => {
+                    if (res && res.key) parts.value[res.key].options = res.data;
+                });
+
+                // 自動帶入期數
+                const targetWeek = getAutoWeekKey();
+                
+                // 檢查 weekly.json 是否已經有這一期的資料
+                if (weeklyData.value[targetWeek]) {
+                    selectedWeeklyKey.value = targetWeek;
+                } else {
+                    // 如果計算出的期數還沒更新，則取現有資料中最新的一期
+                    selectedWeeklyKey.value = sortedWeeklyKeys.value[0] || "";
+                }
+                
+                if (selectedWeeklyKey.value) {
+                    applyWeekly();
+                }
+
+            } catch (err) {
+                console.error("資料讀取失敗:", err);
+            }
         };
 
         // 套用對應期數的詞條
