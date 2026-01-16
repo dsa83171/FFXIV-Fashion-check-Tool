@@ -72,7 +72,7 @@
                             type="text" 
                             v-model="parts[conf.key].search"
                             @focus="parts[conf.key].isOpen = true"
-                            class="w-full bg-[#2a2a35] text-white text-sm border border-[#444452] focus:border-[#4db6ac] rounded px-2 py-2 outline-none transition-colors placeholder:text-[#777888]"
+                            class="w-full bg-[#2a2a35] text-[#4db6ac] font-bold text-sm border border-[#444452] focus:border-[#4db6ac] rounded px-2 py-2 outline-none transition-colors placeholder:text-[#777888]"
                             placeholder="搜尋詞條..."
                         />
                         <button v-show="parts[conf.key].search" @click="clearSingle(conf.key)" class="absolute right-2 top-1/2 -translate-y-1/2 text-[#C2C2C2] hover:text-red-400 text-lg">&times;</button>
