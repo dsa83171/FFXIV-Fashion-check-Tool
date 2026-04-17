@@ -20,6 +20,11 @@ createApp({
             "耳墜": "ears", "項環": "necklace", "手飾": "bracelet", "戒指(右)": "rings_right", "戒指(左)": "rings_left"
         };
 
+        const catMap = {
+            '頭部': '34', '身體': '35', '腿部': '36', '手部': '37', '腳部': '38',
+            '項環': '40', '耳墜': '41', '手飾': '42', '戒指(右)': '43', '戒指(左)': '43'
+        };
+
         const parts = ref({});
         const weeklyData = ref({});
         const selectedWeeklyKey = ref("");
@@ -139,20 +144,6 @@ createApp({
         const buildItemLinks = (text, partLabel) => {
             if (!text) return '';
         
-            // 建立分類與 ID 的對應表 (根據您的需求)
-            const catMap = {
-                '頭部': '34',
-                '身體': '35',
-                '腿部': '36',
-                '手部': '37',
-                '腳部': '38',
-                '項環': '40', // 對應項鍊
-                '耳墜': '41', // 對應耳飾
-                '手飾': '42', // 對應手鐲
-                '戒指(右)': '43',
-                '戒指(左)': '43'
-            };
-        
             // 根據傳入的 label 取得 cat 參數
             const catParam = catMap[partLabel] ? `&cat=${catMap[partLabel]}` : '';
         
@@ -180,6 +171,28 @@ createApp({
                 // 無法產生連結時退回純文字
                 return `<span class="block py-0.5 leading-snug">${escapeHtml(trimmed)}</span>`;
             }).join('');
+        };
+
+        // ─────────────────────────────────────────────
+        // 將推薦群組（rec）的裝備陣列轉成以「+」連接的超連結 HTML
+        //   rec = { 分數: 80, 裝備: [{ 名稱: '...', 部位: '...' }, ...] }
+        // ─────────────────────────────────────────────
+        const buildRecommendLink = (rec) => {
+            if (!rec.裝備 || !rec.裝備.length) return '';
+
+            return rec.裝備.map(item => {
+                const url = buildSearchUrl(item.名稱);
+                const catParam = item.部位 && catMap[item.部位] ? `&cat=${catMap[item.部位]}` : '';
+
+                if (url) {
+                    return `<a href="${url}${catParam}" target="_blank" rel="noopener noreferrer"
+                        class="hover:text-[#4db6ac] hover:underline underline-offset-2 transition-colors duration-150 whitespace-nowrap"
+                    >${escapeHtml(item.名稱)}</a>`;
+                }
+
+                // 無法產生連結時退回純文字
+                return `<span class="whitespace-nowrap">${escapeHtml(item.名稱)}</span>`;
+            }).join('<span class="mx-1.5 text-[#555566] select-none">+</span>');
         };
 
         // XSS 防護用的簡易 HTML 跳脫
@@ -260,7 +273,8 @@ createApp({
             parts, partConfigs, weeklyData, selectedWeeklyKey, sortedWeeklyKeys,
             globalSearch, globalMatchedResults,
             filteredOptions, selectItem, clearSingle, clearAll, applyWeekly,
-            buildItemLinks   // ← 暴露給模板使用
+            buildItemLinks,
+            buildRecommendLink   // ← 暴露給模板使用
         };
     }
 }).mount('#app');
