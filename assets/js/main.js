@@ -179,20 +179,49 @@ createApp({
         // ─────────────────────────────────────────────
         const buildRecommendLink = (rec) => {
             if (!rec.裝備 || !rec.裝備.length) return '';
-
-            return rec.裝備.map(item => {
-                const url = buildSearchUrl(item.名稱);
-                const catParam = item.部位 && catMap[item.部位] ? `&cat=${catMap[item.部位]}` : '';
-
-                if (url) {
-                    return `<a href="${url}${catParam}" target="_blank" rel="noopener noreferrer"
-                        class="hover:text-[#4db6ac] hover:underline underline-offset-2 transition-colors duration-150 whitespace-nowrap"
-                    >${escapeHtml(item.名稱)}</a>`;
-                }
-
-                // 無法產生連結時退回純文字
-                return `<span class="whitespace-nowrap">${escapeHtml(item.名稱)}</span>`;
-            }).join('<span class="mx-1.5 text-[#555566] select-none">+</span>');
+        
+            // 1. 根據「部位」進行分組 (Group by Part)
+            const groups = {};
+            rec.裝備.forEach(item => {
+                const p = item.部位 || '其他';
+                if (!groups[p]) groups[p] = [];
+                groups[p].push(item);
+            });
+        
+            // 2. 處理每一個部位的分組內容
+            const partResults = Object.keys(groups).map(partName => {
+                const items = groups[partName];
+                
+                // 處理同部位下的多個選項（用 / 隔開）
+                const itemLinks = items.map(item => {
+                    const url = buildSearchUrl(item.名稱);
+                    const catParam = item.部位 && catMap[item.部位] ? `&cat=${catMap[item.部位]}` : '';
+                    
+                    let html = '';
+                    if (url) {
+                        html = `<a href="${url}${catParam}" target="_blank" rel="noopener noreferrer"
+                            class="hover:text-[#4db6ac] font-bold hover:underline underline-offset-2 transition-colors duration-150 whitespace-nowrap"
+                        >${escapeHtml(item.名稱)}</a>`;
+                    } else {
+                        html = `<span class="whitespace-nowrap">${escapeHtml(item.名稱)}</span>`;
+                    }
+        
+                    // 加入備註標籤 (如：男/女)
+                    if (item.備註) {
+                        html += `<span class="ml-1 text-[12px] bg-[#444452] px-1 rounded text-[#a5a5b1] select-none">${escapeHtml(item.備註)}</span>`;
+                    }
+                    return html;
+                }).join('<span class="mx-1 text-[#666] select-none">/</span>');
+        
+                // 加上部位標籤（例如 身體: ...）使其更易讀
+                return `<span class="flex items-center">
+                            <span class="text-[#777888] text-[14px] mr-1.5 font-bold uppercase tracking-tighter">${escapeHtml(partName)}:</span>
+                            <span class="flex items-center">${itemLinks}</span>
+                        </span>`;
+            });
+        
+            // 3. 不同部位之間用「+」連結
+            return partResults.join('<span class="mx-3 text-[#555566] select-none font-bold">+</span>');
         };
 
         // XSS 防護用的簡易 HTML 跳脫
