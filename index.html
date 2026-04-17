@@ -95,23 +95,23 @@
                     
                     <div v-if="parts[conf.key].isOpen" @click="parts[conf.key].isOpen = false" class="fixed inset-0 z-10"></div>
     
-                    <div class="flex-grow text-sm leading-relaxed bg-[#2a2a35]/60 p-3 rounded border border-[#444452]/50 whitespace-pre-line min-h-[100px]">
-                        <!-- 顯示全域搜尋結果(優先覆蓋) -->
+                    <div class="flex-grow text-sm leading-relaxed bg-[#2a2a35]/60 p-3 rounded border border-[#444452]/50 min-h-[100px]">
+                        <!-- 顯示全域搜尋結果（優先覆蓋） -->
                         <div v-if="globalSearch && globalMatchedResults(conf.key).length > 0">
                             <div v-for="(res, idx) in globalMatchedResults(conf.key)" :key="idx" class="mb-3 last:mb-0">
                                 <div class="text-[#4db6ac] text-[11px] font-bold tracking-tighter opacity-80 mb-1">
                                     【{{ res.key }}】
                                 </div>
-                                <div class="text-white text-[13px] border-l-2 border-[#4db6ac]/30 pl-2">
-                                    {{ res.value }}
+                                <!-- 裝備名稱渲染為可點擊超連結 -->
+                                <div class="text-[13px] border-l-2 border-[#4db6ac]/30 pl-2"
+                                     v-html="buildItemLinks(res.value)">
                                 </div>
                             </div>
                         </div>
-                        <!-- 顯示已選詞條 -->
-                        <div v-else-if="!globalSearch && parts[conf.key].selectedKey">
-                            <span class="text-white font-bold">
-                                {{ parts[conf.key].options[parts[conf.key].selectedKey] }}
-                            </span>
+                        <!-- 顯示已選詞條，裝備名稱渲染為可點擊超連結 -->
+                        <div v-else-if="!globalSearch && parts[conf.key].selectedKey"
+                             class="font-bold"
+                             v-html="buildItemLinks(parts[conf.key].options[parts[conf.key].selectedKey],conf.label)">
                         </div>
                         <!-- 找不到對應項 -->
                         <span v-else class="text-[#777888] italic">
@@ -129,7 +129,7 @@
                        <span>🐛</span> Bug or 詞條資料回報
                     </a>
                     <p class="ml-4 text-[#777888] text-[12px] tracking-widest font-mono">
-                        FFXIV Fashion Check Tool
+                        Credit: <a href="https://cycleapple.github.io/xiv-tc-toolbox/">cycleapple</a>
                     </p>
                 </div>
             </footer>

@@ -105,6 +105,92 @@ createApp({
             });
         };
 
+
+        const buildSearchUrl = (itemName) => {
+            const BASE = 'https://cycleapple.github.io/ffxiv-item-search-tc';
+
+            let cleaned = itemName
+                // 去除全形／半形括號內的補充說明，例如(複製品)
+                .replace(/[（(][^）)]*[）)]/g, '')
+                // 去除【】內的說明，例如【男/女】【鋼】
+                .replace(/【[^】]*】/g, '')
+                // 去除 ※ 開頭的備注（整行）
+                .replace(/※.*/, '')
+                .trim();
+
+            if (!cleaned) return null;
+
+            // 以 XX/xx/X/x 萬用字元及 / 斜線切割，取出所有有意義的關鍵字
+            const keywords = cleaned
+                .split(/[Xx]{1,2}|\//)
+                .map(p => p.trim())
+                .filter(Boolean);
+
+            if (!keywords.length) return null;
+
+            return `${BASE}?q=${keywords.join('+')}`;
+        };
+
+        // ─────────────────────────────────────────────
+        // 將多行裝備文字轉成帶超連結的 HTML 字串
+        //   每一行裝備名稱包裹成 <a> 連結
+        //   ※ 開頭的備注行保留為純文字灰字
+        // ─────────────────────────────────────────────
+        const buildItemLinks = (text, partLabel) => {
+            if (!text) return '';
+        
+            // 建立分類與 ID 的對應表 (根據您的需求)
+            const catMap = {
+                '頭部': '34',
+                '身體': '35',
+                '腿部': '36',
+                '手部': '37',
+                '腳部': '38',
+                '項環': '40', // 對應項鍊
+                '耳墜': '41', // 對應耳飾
+                '手飾': '42', // 對應手鐲
+                '戒指(右)': '43',
+                '戒指(左)': '43'
+            };
+        
+            // 根據傳入的 label 取得 cat 參數
+            const catParam = catMap[partLabel] ? `&cat=${catMap[partLabel]}` : '';
+        
+            return text.split('\n').map(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return '';
+        
+                // ※ 備注行，不加連結
+                if (trimmed.startsWith('※')) {
+                    return `<span class="block text-[11px] text-[#666677] mt-1">${escapeHtml(trimmed)}</span>`;
+                }
+        
+                // 取得基礎 URL 並加上分類參數
+                let url = buildSearchUrl(trimmed);
+                if (url && catParam) {
+                    url += catParam;
+                }
+        
+                if (url) {
+                    return `<a href="${url}" target="_blank" rel="noopener noreferrer"
+                        class="block py-0.5 text-[#c8d8e8] hover:text-[#4db6ac] hover:underline underline-offset-2 transition-colors duration-150 leading-snug"
+                    >${escapeHtml(trimmed)}</a>`;
+                }
+        
+                // 無法產生連結時退回純文字
+                return `<span class="block py-0.5 leading-snug">${escapeHtml(trimmed)}</span>`;
+            }).join('');
+        };
+
+        // XSS 防護用的簡易 HTML 跳脫
+        const escapeHtml = (str) => {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        };
+
         // 各部位全域搜尋
         const globalMatchedResults = (partKey) => {
             const query = globalSearch.value.trim().toLowerCase();
@@ -123,9 +209,6 @@ createApp({
                 const filteredLines = lines.filter(line => 
                     line.toLowerCase().includes(query)
                 );
-
-                // 詞條名稱 (key) 本身就包含搜尋字串
-                // const keyMatches = k.toLowerCase().includes(query);
 
                 if (filteredLines.length > 0 ) {
                     matched.push({ 
@@ -176,7 +259,8 @@ createApp({
         return {
             parts, partConfigs, weeklyData, selectedWeeklyKey, sortedWeeklyKeys,
             globalSearch, globalMatchedResults,
-            filteredOptions, selectItem, clearSingle, clearAll, applyWeekly
+            filteredOptions, selectItem, clearSingle, clearAll, applyWeekly,
+            buildItemLinks   // ← 暴露給模板使用
         };
     }
 }).mount('#app');
